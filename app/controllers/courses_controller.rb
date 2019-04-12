@@ -16,8 +16,7 @@ class CoursesController < ApplicationController
     def update
         @course = Course.find(params[:id])
         if @course.update(course_params)
-            render json: @course, status: :created
-            # head(:ok)
+            head(:ok)
         else 
             head(:unprocessable_entity)
         end
