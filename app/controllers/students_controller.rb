@@ -9,22 +9,30 @@ class StudentsController < ApplicationController
         if @student.save
             render json: @student, status: :created
         else
-            head(:unprocessable_entity)
+            render json: @student.errors.full_messages, status: :unprocessable_entity
+            # head(:unprocessable_entity)
         end
     end
 
     def update
         @student = Student.find(params[:id])
-        if @student.update(student_params)
+        flag = params[:student][:email] != @student.email
+        p params[:student][:email],@student.email
+        if @student.update(student_params(flag))
             head(:ok)
         else
-            head(:unprocessable_entity)
+            render json: @student.errors.full_messages, status: :unprocessable_entity
+            # head(:unprocessable_entity)
         end
 
     end
 
     private
-        def student_params
-            params.require(:student).permit(:name,:email)
+        def student_params(flag=true)
+            if flag
+                params.require(:student).permit(:name,:email,course_ids:[])
+            else
+                params.require(:student).permit(:name,course_ids:[])
+            end
         end
 end

@@ -9,22 +9,28 @@ class TeachersController < ApplicationController
         if @teacher.save
             render json: @teacher, status: :created
         else
-            head(:unprocessable_entity)
+            render json: @teacher.errors.full_messages , status: :unprocessable_entity
         end
     end
 
     def update
         @teacher = Teacher.find(params[:id])
-        if @teacher.update(teacher_params)
+        flag = params[:teacher][:email] != @teacher.email
+        if @teacher.update(teacher_params(flag))
             head(:ok)
         else
-            head(:unprocessable_entity)
+            render json: @teacher.errors.full_messages , status: :unprocessable_entity
+            #head(:unprocessable_entity)
         end
 
     end
 
     private
-        def teacher_params
-            params.require(:teacher).permit(:name,:email)
+        def teacher_params(flag = true)
+            if flag
+                params.require(:teacher).permit(:name,:email,course_ids:[])
+            else
+                params.require(:teacher).permit(:name,course_ids:[])
+            end
         end
 end
