@@ -1,28 +1,37 @@
 class StudentsController < ApplicationController
     def index
         @students = Student.all
-        render json: @students, status: :ok
+        render json: StudentSerializer.new(@students).serialized_json, status: :ok
     end
 
     def create
-        @student = Student.new(student_params)
-        if @student.save
-            render json: @student, status: :created
+        if auth_user == false
+            render json:{"message"=>"not loged in"}, status: :unprocessable_entity
         else
-            render json: @student.errors.full_messages, status: :unprocessable_entity
-            # head(:unprocessable_entity)
+            @student = Student.new(student_params)
+
+            if @student.save
+                render json: StudentSerializer.new(@student).serialized_json, status: :created
+            else
+                render json: @student.errors.full_messages, status: :unprocessable_entity
+                # head(:unprocessable_entity)
+            end
         end
     end
 
     def update
-        @student = Student.find(params[:id])
-        flag = params[:student][:email] != @student.email
-        p params[:student][:email],@student.email
-        if @student.update(student_params(flag))
-            head(:ok)
-        else
-            render json: @student.errors.full_messages, status: :unprocessable_entity
-            # head(:unprocessable_entity)
+        if auth_user == false
+            render json:{"message"=>"not loged in"}, status: :unprocessable_entity
+        else 
+            @student = Student.find(params[:id])
+            flag = params[:student][:email] != @student.email
+            p params[:student][:email],@student.email
+            if @student.update(student_params(flag))
+                head(:ok)
+            else
+                render json: @student.errors.full_messages, status: :unprocessable_entity
+                # head(:unprocessable_entity)
+            end
         end
 
     end
@@ -33,6 +42,15 @@ class StudentsController < ApplicationController
                 params.require(:student).permit(:name,:email,course_ids:[])
             else
                 params.require(:student).permit(:name,course_ids:[])
+            end
+        end
+
+        def auth_user
+            user = User.where(authentication_token: params[:token]).first
+            if user == nil
+                return false
+            else
+                return true
             end
         end
 end

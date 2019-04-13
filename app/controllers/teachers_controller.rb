@@ -1,26 +1,34 @@
 class TeachersController < ApplicationController
     def index
         @teachers = Teacher.all
-        render json: @teachers, status: :ok
+        render json: TeacherSerializer.new(@teachers).serialized_json, status: :ok
     end
 
     def create
-        @teacher = Teacher.new(teacher_params)
-        if @teacher.save
-            render json: @teacher, status: :created
+        if auth_user == false
+            render json:{"message"=>"not loged in"}, status: :unprocessable_entity
         else
-            render json: @teacher.errors.full_messages , status: :unprocessable_entity
+            @teacher = Teacher.new(teacher_params)
+            if @teacher.save
+                render json: TeacherSerializer.new(@teacher).serialzed_json, status: :created
+            else
+                render json: @teacher.errors.full_messages , status: :unprocessable_entity
+            end
         end
     end
 
     def update
-        @teacher = Teacher.find(params[:id])
-        flag = params[:teacher][:email] != @teacher.email
-        if @teacher.update(teacher_params(flag))
-            head(:ok)
+        if auth_user == false
+            render json:{"message"=>"not loged in"}, status: :unprocessable_entity
         else
-            render json: @teacher.errors.full_messages , status: :unprocessable_entity
-            #head(:unprocessable_entity)
+            @teacher = Teacher.find(params[:id])
+            flag = params[:teacher][:email] != @teacher.email
+            if @teacher.update(teacher_params(flag))
+                head(:ok)
+            else
+                render json: @teacher.errors.full_messages , status: :unprocessable_entity
+                #head(:unprocessable_entity)
+            end
         end
 
     end
@@ -31,6 +39,15 @@ class TeachersController < ApplicationController
                 params.require(:teacher).permit(:name,:email,course_ids:[])
             else
                 params.require(:teacher).permit(:name,course_ids:[])
+            end
+        end
+
+        def auth_user
+            user = User.where(authentication_token: params[:token]).first
+            if user == nil
+                return false
+            else
+                return true
             end
         end
 end
